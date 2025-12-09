@@ -5,6 +5,10 @@ const CAPACITY_WH = 37;
 // How many samples to keep in memory (e.g. 60 minutes if interval=5s)
 const MAX_SAMPLES = 720;
 
+// Storage key for persistent history
+const STORAGE_KEY = "kachow_history";
+const STORAGE_SESSION_KEY = "kachow_session";
+
 // DOM Elements
 const levelEl = document.getElementById("level");
 const statusBadge = document.getElementById("statusBadge");
@@ -27,7 +31,7 @@ const profileTextEl = document.getElementById("profileText");
 const exportBtn = document.getElementById("exportBtn");
 
 // Each sample = { t: timestamp_ms, p: power_W }
-const samples = [];
+let samples = [];
 
 // Ring circumference for progress calculation
 const RING_CIRCUMFERENCE = 2 * Math.PI * 52; // r = 52
@@ -40,6 +44,85 @@ let lastSampleTime = null;
 // Power tracking for estimation
 let lastLevel = null;
 let lastLevelTime = null;
+
+// Theme detection
+function isDarkMode() {
+  return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
+// Get theme-aware colors
+function getChartColors() {
+  if (isDarkMode()) {
+    return {
+      placeholder: "#3f3f46",
+      gradientStart: "rgba(0, 255, 135, 0.3)",
+      gradientMid: "rgba(96, 239, 255, 0.1)",
+      gradientEnd: "rgba(0, 97, 255, 0)",
+      lineStart: "#00ff87",
+      lineMid: "#60efff",
+      lineEnd: "#0061ff",
+      dotColor: "#00ff87",
+      dotGlow: "rgba(0, 255, 135, 0.3)"
+    };
+  } else {
+    return {
+      placeholder: "#9ca3af",
+      gradientStart: "rgba(0, 170, 90, 0.25)",
+      gradientMid: "rgba(8, 145, 178, 0.1)",
+      gradientEnd: "rgba(0, 82, 204, 0)",
+      lineStart: "#00aa5a",
+      lineMid: "#0891b2",
+      lineEnd: "#0052cc",
+      dotColor: "#00aa5a",
+      dotGlow: "rgba(0, 170, 90, 0.3)"
+    };
+  }
+}
+
+// Load samples from storage
+async function loadHistory() {
+  try {
+    const result = await chrome.storage.local.get([STORAGE_KEY, STORAGE_SESSION_KEY]);
+    
+    if (result[STORAGE_KEY] && Array.isArray(result[STORAGE_KEY])) {
+      // Filter out samples older than 1 hour to keep storage reasonable
+      const oneHourAgo = Date.now() - (60 * 60 * 1000);
+      samples = result[STORAGE_KEY].filter(s => s.t > oneHourAgo);
+      console.log(`Loaded ${samples.length} samples from history`);
+    }
+    
+    if (result[STORAGE_SESSION_KEY]) {
+      sessionEnergyWh = result[STORAGE_SESSION_KEY].energy || 0;
+      sessionStartTime = result[STORAGE_SESSION_KEY].startTime || Date.now();
+    }
+  } catch (err) {
+    console.log("Could not load history:", err);
+  }
+}
+
+// Save samples to storage (debounced)
+let saveTimeout = null;
+function saveHistory() {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  
+  saveTimeout = setTimeout(async () => {
+    try {
+      // Only keep last hour of data
+      const oneHourAgo = Date.now() - (60 * 60 * 1000);
+      const recentSamples = samples.filter(s => s.t > oneHourAgo);
+      
+      await chrome.storage.local.set({
+        [STORAGE_KEY]: recentSamples,
+        [STORAGE_SESSION_KEY]: {
+          energy: sessionEnergyWh,
+          startTime: sessionStartTime
+        }
+      });
+    } catch (err) {
+      console.log("Could not save history:", err);
+    }
+  }, 1000); // Debounce by 1 second
+}
 
 function formatSeconds(sec) {
   if (!isFinite(sec) || sec < 0) return "--";
@@ -112,6 +195,9 @@ function addSample(powerW) {
   if (samples.length > MAX_SAMPLES) {
     samples.shift();
   }
+  
+  // Save to persistent storage
+  saveHistory();
 }
 
 // Calculate average power over a time window (in milliseconds)
@@ -208,11 +294,14 @@ function drawChart() {
   const width = rect.width;
   const height = rect.height;
   
+  // Get theme-aware colors
+  const colors = getChartColors();
+  
   ctx.clearRect(0, 0, width, height);
 
   if (samples.length < 2) {
     // Draw placeholder
-    ctx.fillStyle = "#3f3f46";
+    ctx.fillStyle = colors.placeholder;
     ctx.font = "11px 'Outfit', system-ui";
     ctx.textAlign = "center";
     ctx.fillText("Collecting data…", width / 2, height / 2);
@@ -234,9 +323,9 @@ function drawChart() {
 
   // Create gradient for the area fill
   const gradient = ctx.createLinearGradient(0, padding.top, 0, height - padding.bottom);
-  gradient.addColorStop(0, "rgba(0, 255, 135, 0.3)");
-  gradient.addColorStop(0.5, "rgba(96, 239, 255, 0.1)");
-  gradient.addColorStop(1, "rgba(0, 97, 255, 0)");
+  gradient.addColorStop(0, colors.gradientStart);
+  gradient.addColorStop(0.5, colors.gradientMid);
+  gradient.addColorStop(1, colors.gradientEnd);
 
   // Draw area fill
   ctx.beginPath();
@@ -262,9 +351,9 @@ function drawChart() {
 
   // Draw the line
   const lineGradient = ctx.createLinearGradient(0, 0, width, 0);
-  lineGradient.addColorStop(0, "#00ff87");
-  lineGradient.addColorStop(0.5, "#60efff");
-  lineGradient.addColorStop(1, "#0061ff");
+  lineGradient.addColorStop(0, colors.lineStart);
+  lineGradient.addColorStop(0.5, colors.lineMid);
+  lineGradient.addColorStop(1, colors.lineEnd);
 
   ctx.beginPath();
   samples.forEach((s, idx) => {
@@ -290,13 +379,13 @@ function drawChart() {
   
   ctx.beginPath();
   ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
-  ctx.fillStyle = "#00ff87";
+  ctx.fillStyle = colors.dotColor;
   ctx.fill();
   
   // Glow effect for dot
   ctx.beginPath();
   ctx.arc(lastX, lastY, 6, 0, Math.PI * 2);
-  ctx.fillStyle = "rgba(0, 255, 135, 0.3)";
+  ctx.fillStyle = colors.dotGlow;
   ctx.fill();
 }
 
@@ -557,6 +646,22 @@ function exportChartImage() {
 }
 
 async function init() {
+  // Load persistent history first
+  await loadHistory();
+  
+  // Draw chart with loaded data
+  if (samples.length > 0) {
+    drawChart();
+    updateExtendedStats();
+  }
+  
+  // Listen for system theme changes
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      drawChart();
+    });
+  }
+  
   if (!("getBattery" in navigator)) {
     statusText.textContent = "Not Supported";
     powerEl.textContent = "N/A";

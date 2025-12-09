@@ -17,8 +17,12 @@ A sleek Chrome extension that estimates real-time charging and discharging power
 - **Average Power Stats** — View 5-minute, 30-minute, and 1-hour power averages
 - **Power Profile Detection** — Automatically detects Power Saver, Balanced, Performance, or High Performance modes
 - **Export Chart Image** — One-click export to high-resolution PNG with stats overlay
+- **Badge on Icon** — Battery percentage shown directly on the extension icon
+- **Low Battery Notifications** — Chrome notifications at 20%, 10%, and 5% battery
+- **Light/Dark Theme** — Automatically follows your system theme preference
+- **Persistent History** — Power data survives popup close (up to 1 hour)
 - **Low Battery Warning** — Visual indicator when battery drops below 20%
-- **Beautiful Dark UI** — Modern glassmorphism design with smooth animations
+- **Beautiful UI** — Modern glassmorphism design with smooth animations
 
 ## 📦 Installation
 
@@ -63,8 +67,9 @@ Data is sampled every 5 seconds and displayed on a real-time chart.
 ```
 kachow/
 ├── manifest.json   # Extension configuration (Manifest V3)
+├── background.js   # Service worker for badge & notifications
 ├── popup.html      # Main UI structure
-├── popup.css       # Styling with dark theme & animations
+├── popup.css       # Styling with light/dark themes
 ├── popup.js        # Battery API logic & chart rendering
 └── README.md       # This file
 ```
