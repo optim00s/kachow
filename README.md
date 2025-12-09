@@ -13,6 +13,10 @@ A sleek Chrome extension that estimates real-time charging and discharging power
 - **Battery Ring Progress** — Visual circular indicator showing current charge level
 - **Power History Chart** — Live-updating graph tracking power consumption over time
 - **Time Estimates** — Shows time until full (charging) or time remaining (on battery)
+- **Session Energy Tracking** — Tracks total Wh consumed during your session
+- **Average Power Stats** — View 5-minute, 30-minute, and 1-hour power averages
+- **Power Profile Detection** — Automatically detects Power Saver, Balanced, Performance, or High Performance modes
+- **Export Chart Image** — One-click export to high-resolution PNG with stats overlay
 - **Low Battery Warning** — Visual indicator when battery drops below 20%
 - **Beautiful Dark UI** — Modern glassmorphism design with smooth animations
 
@@ -85,7 +89,23 @@ kachow/
 | **Status Badge** | Shows "Charging" or "On Battery" with animated pulse |
 | **Power Draw** | Current estimated power in Watts |
 | **Time Info** | Time until full (charging) or remaining (discharging) |
+| **Session Energy** | Total Wh consumed this session |
+| **Averages (5m/30m/1h)** | Rolling power averages over different time windows |
+| **Power Profile** | Detected usage mode (Power Saver → High Performance) |
 | **Power Chart** | Historical power consumption graph |
+| **Export Button** | Downloads high-res PNG chart with stats |
+
+## 📸 Chart Export
+
+Click the download button (⬇️) in the chart header to instantly export a high-resolution PNG image featuring:
+
+- Full power history visualization with gradient fill
+- Session statistics overlay (Min, Max, Avg, Energy)
+- Average power reference line
+- Kachow's signature dark theme
+- Timestamp and watermark
+
+No external tools needed — just click and save!
 
 ## ⚠️ Limitations
 

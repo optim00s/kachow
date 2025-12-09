@@ -2,8 +2,8 @@
 // If your specific battery is 32 Wh or 29 Wh, you can change this.
 const CAPACITY_WH = 37;
 
-// How many samples to keep in memory (e.g. 5 minutes if interval=1s)
-const MAX_SAMPLES = 300;
+// How many samples to keep in memory (e.g. 60 minutes if interval=5s)
+const MAX_SAMPLES = 720;
 
 // DOM Elements
 const levelEl = document.getElementById("level");
@@ -17,13 +17,27 @@ const ringProgress = document.getElementById("ringProgress");
 const canvas = document.getElementById("powerChart");
 const ctx = canvas.getContext("2d");
 
+// New DOM elements for extended stats
+const sessionEnergyEl = document.getElementById("sessionEnergy");
+const avg5mEl = document.getElementById("avg5m");
+const avg30mEl = document.getElementById("avg30m");
+const avg1hEl = document.getElementById("avg1h");
+const powerProfileEl = document.getElementById("powerProfile");
+const profileTextEl = document.getElementById("profileText");
+const exportBtn = document.getElementById("exportBtn");
+
 // Each sample = { t: timestamp_ms, p: power_W }
 const samples = [];
 
 // Ring circumference for progress calculation
 const RING_CIRCUMFERENCE = 2 * Math.PI * 52; // r = 52
 
-// Add this near the top, after MAX_SAMPLES
+// Session tracking
+let sessionStartTime = Date.now();
+let sessionEnergyWh = 0;
+let lastSampleTime = null;
+
+// Power tracking for estimation
 let lastLevel = null;
 let lastLevelTime = null;
 
@@ -86,9 +100,86 @@ function estimatePowerW(battery) {
 
 function addSample(powerW) {
   const now = Date.now();
+  
+  // Calculate energy for session stats (Wh = W * hours)
+  if (lastSampleTime !== null) {
+    const hoursDelta = (now - lastSampleTime) / 1000 / 3600;
+    sessionEnergyWh += powerW * hoursDelta;
+  }
+  lastSampleTime = now;
+  
   samples.push({ t: now, p: powerW });
   if (samples.length > MAX_SAMPLES) {
     samples.shift();
+  }
+}
+
+// Calculate average power over a time window (in milliseconds)
+function getAveragePower(windowMs) {
+  if (samples.length === 0) return null;
+  
+  const now = Date.now();
+  const cutoff = now - windowMs;
+  const relevantSamples = samples.filter(s => s.t >= cutoff);
+  
+  if (relevantSamples.length === 0) return null;
+  
+  const sum = relevantSamples.reduce((acc, s) => acc + s.p, 0);
+  return sum / relevantSamples.length;
+}
+
+// Update extended stats display
+function updateExtendedStats() {
+  // Session energy
+  sessionEnergyEl.textContent = sessionEnergyWh.toFixed(2) + " Wh";
+  
+  // 5 minute average
+  const avg5 = getAveragePower(5 * 60 * 1000);
+  avg5mEl.textContent = avg5 !== null ? avg5.toFixed(1) + " W" : "-- W";
+  
+  // 30 minute average
+  const avg30 = getAveragePower(30 * 60 * 1000);
+  avg30mEl.textContent = avg30 !== null ? avg30.toFixed(1) + " W" : "-- W";
+  
+  // 1 hour average
+  const avg60 = getAveragePower(60 * 60 * 1000);
+  avg1hEl.textContent = avg60 !== null ? avg60.toFixed(1) + " W" : "-- W";
+}
+
+// Detect power profile based on current power consumption
+function detectPowerProfile(powerW, isCharging) {
+  powerProfileEl.classList.remove("power-saver", "balanced", "performance", "high-performance");
+  
+  if (isCharging) {
+    // Charging profiles based on charge rate
+    if (powerW < 20) {
+      profileTextEl.textContent = "Trickle Charge";
+      powerProfileEl.classList.add("power-saver");
+    } else if (powerW < 35) {
+      profileTextEl.textContent = "Normal Charge";
+      powerProfileEl.classList.add("balanced");
+    } else if (powerW < 50) {
+      profileTextEl.textContent = "Fast Charge";
+      powerProfileEl.classList.add("performance");
+    } else {
+      profileTextEl.textContent = "Rapid Charge";
+      powerProfileEl.classList.add("high-performance");
+    }
+  } else {
+    // Discharging profiles based on power draw
+    if (powerW < 5) {
+      profileTextEl.textContent = "Power Saver";
+      powerProfileEl.classList.add("power-saver");
+    } else if (powerW < 12) {
+      profileTextEl.textContent = "Balanced";
+      powerProfileEl.classList.add("balanced");
+    } else if (powerW < 25) {
+      profileTextEl.textContent = "Performance";
+      powerProfileEl.classList.add("performance");
+    } else {
+      profileTextEl.textContent = "High Performance";
+      powerProfileEl.classList.add("high-performance");
+    }
   }
 }
 
@@ -228,13 +319,254 @@ function estimateTimeSeconds(battery, powerW) {
   }
 }
 
+// Export chart as PNG image
+function exportChartImage() {
+  if (samples.length < 2) {
+    alert("Not enough data to export. Please wait for more samples.");
+    return;
+  }
+
+  // Create a high-resolution canvas for export
+  const exportCanvas = document.createElement("canvas");
+  const width = 800;
+  const height = 450;
+  const dpr = 2; // High DPI for crisp export
+  
+  exportCanvas.width = width * dpr;
+  exportCanvas.height = height * dpr;
+  const ectx = exportCanvas.getContext("2d");
+  ectx.scale(dpr, dpr);
+
+  // Colors
+  const bgColor = "#0a0a0f";
+  const gridColor = "rgba(255, 255, 255, 0.05)";
+  const textColor = "#e8e8ed";
+  const labelColor = "#6b7280";
+  const accentColor = "#00ff87";
+  const secondaryColor = "#60efff";
+
+  // Fill background
+  ectx.fillStyle = bgColor;
+  ectx.fillRect(0, 0, width, height);
+
+  // Draw subtle grid
+  ectx.strokeStyle = gridColor;
+  ectx.lineWidth = 1;
+  for (let x = 0; x < width; x += 40) {
+    ectx.beginPath();
+    ectx.moveTo(x, 0);
+    ectx.lineTo(x, height);
+    ectx.stroke();
+  }
+  for (let y = 0; y < height; y += 40) {
+    ectx.beginPath();
+    ectx.moveTo(0, y);
+    ectx.lineTo(width, y);
+    ectx.stroke();
+  }
+
+  // Chart area
+  const padding = { top: 70, right: 30, bottom: 60, left: 70 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  // Calculate data bounds
+  const powers = samples.map(s => s.p);
+  const minP = Math.min(...powers) * 0.9;
+  const maxP = Math.max(...powers) * 1.1;
+  const spanP = Math.max(0.1, maxP - minP);
+  const avgPower = powers.reduce((a, b) => a + b, 0) / powers.length;
+
+  const minT = samples[0].t;
+  const maxT = samples[samples.length - 1].t;
+  const spanT = Math.max(1, maxT - minT);
+  const durationMin = spanT / 1000 / 60;
+
+  // Draw title
+  ectx.fillStyle = textColor;
+  ectx.font = "bold 24px 'Segoe UI', system-ui, sans-serif";
+  ectx.textAlign = "left";
+  ectx.fillText("⚡ Kachow Power History", padding.left, 35);
+
+  // Draw subtitle with date
+  ectx.fillStyle = labelColor;
+  ectx.font = "14px 'Segoe UI', system-ui, sans-serif";
+  ectx.fillText(new Date().toLocaleString(), padding.left, 55);
+
+  // Draw Y-axis labels
+  ectx.fillStyle = labelColor;
+  ectx.font = "12px 'Segoe UI', system-ui, sans-serif";
+  ectx.textAlign = "right";
+  
+  const ySteps = 5;
+  for (let i = 0; i <= ySteps; i++) {
+    const value = minP + (spanP * i / ySteps);
+    const y = padding.top + chartHeight - (chartHeight * i / ySteps);
+    ectx.fillText(value.toFixed(1) + " W", padding.left - 10, y + 4);
+    
+    // Grid line
+    ectx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+    ectx.beginPath();
+    ectx.moveTo(padding.left, y);
+    ectx.lineTo(padding.left + chartWidth, y);
+    ectx.stroke();
+  }
+
+  // Draw X-axis labels
+  ectx.textAlign = "center";
+  const xSteps = Math.min(6, Math.floor(durationMin));
+  for (let i = 0; i <= xSteps; i++) {
+    const x = padding.left + (chartWidth * i / xSteps);
+    const timeMin = (durationMin * i / xSteps).toFixed(1);
+    ectx.fillText(timeMin + "m", x, height - padding.bottom + 25);
+  }
+
+  // Axis labels
+  ectx.fillStyle = labelColor;
+  ectx.font = "13px 'Segoe UI', system-ui, sans-serif";
+  ectx.textAlign = "center";
+  ectx.fillText("Time (minutes)", padding.left + chartWidth / 2, height - 15);
+  
+  ectx.save();
+  ectx.translate(20, padding.top + chartHeight / 2);
+  ectx.rotate(-Math.PI / 2);
+  ectx.fillText("Power (Watts)", 0, 0);
+  ectx.restore();
+
+  // Draw average line
+  const avgY = padding.top + chartHeight - ((avgPower - minP) / spanP) * chartHeight;
+  ectx.strokeStyle = secondaryColor;
+  ectx.lineWidth = 1.5;
+  ectx.setLineDash([8, 4]);
+  ectx.beginPath();
+  ectx.moveTo(padding.left, avgY);
+  ectx.lineTo(padding.left + chartWidth, avgY);
+  ectx.stroke();
+  ectx.setLineDash([]);
+
+  // Draw average label
+  ectx.fillStyle = secondaryColor;
+  ectx.font = "11px 'Segoe UI', system-ui, sans-serif";
+  ectx.textAlign = "left";
+  ectx.fillText(`Avg: ${avgPower.toFixed(1)}W`, padding.left + chartWidth + 5, avgY + 4);
+
+  // Create gradient for area fill
+  const gradient = ectx.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
+  gradient.addColorStop(0, "rgba(0, 255, 135, 0.4)");
+  gradient.addColorStop(0.5, "rgba(96, 239, 255, 0.15)");
+  gradient.addColorStop(1, "rgba(0, 97, 255, 0)");
+
+  // Draw filled area
+  ectx.beginPath();
+  samples.forEach((s, idx) => {
+    const x = padding.left + ((s.t - minT) / spanT) * chartWidth;
+    const y = padding.top + chartHeight - ((s.p - minP) / spanP) * chartHeight;
+    if (idx === 0) ectx.moveTo(x, y);
+    else ectx.lineTo(x, y);
+  });
+  ectx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+  ectx.lineTo(padding.left, padding.top + chartHeight);
+  ectx.closePath();
+  ectx.fillStyle = gradient;
+  ectx.fill();
+
+  // Draw line
+  const lineGradient = ectx.createLinearGradient(padding.left, 0, padding.left + chartWidth, 0);
+  lineGradient.addColorStop(0, "#00ff87");
+  lineGradient.addColorStop(0.5, "#60efff");
+  lineGradient.addColorStop(1, "#0061ff");
+
+  ectx.beginPath();
+  samples.forEach((s, idx) => {
+    const x = padding.left + ((s.t - minT) / spanT) * chartWidth;
+    const y = padding.top + chartHeight - ((s.p - minP) / spanP) * chartHeight;
+    if (idx === 0) ectx.moveTo(x, y);
+    else ectx.lineTo(x, y);
+  });
+  ectx.strokeStyle = lineGradient;
+  ectx.lineWidth = 2.5;
+  ectx.lineCap = "round";
+  ectx.lineJoin = "round";
+  ectx.stroke();
+
+  // Draw end dot
+  const lastSample = samples[samples.length - 1];
+  const lastX = padding.left + chartWidth;
+  const lastY = padding.top + chartHeight - ((lastSample.p - minP) / spanP) * chartHeight;
+  
+  ectx.beginPath();
+  ectx.arc(lastX, lastY, 6, 0, Math.PI * 2);
+  ectx.fillStyle = accentColor;
+  ectx.fill();
+  
+  ectx.beginPath();
+  ectx.arc(lastX, lastY, 10, 0, Math.PI * 2);
+  ectx.fillStyle = "rgba(0, 255, 135, 0.3)";
+  ectx.fill();
+
+  // Stats box
+  const statsX = width - 180;
+  const statsY = padding.top + 10;
+  const statsW = 150;
+  const statsH = 100;
+
+  // Stats background
+  ectx.fillStyle = "rgba(0, 0, 0, 0.6)";
+  ectx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+  ectx.lineWidth = 1;
+  ectx.beginPath();
+  ectx.roundRect(statsX, statsY, statsW, statsH, 8);
+  ectx.fill();
+  ectx.stroke();
+
+  // Stats content
+  ectx.fillStyle = labelColor;
+  ectx.font = "bold 11px 'Segoe UI', system-ui, sans-serif";
+  ectx.textAlign = "left";
+  ectx.fillText("SESSION STATS", statsX + 12, statsY + 20);
+
+  ectx.font = "12px 'Segoe UI', system-ui, sans-serif";
+  const stats = [
+    { label: "Min", value: Math.min(...powers).toFixed(1) + " W", color: "#60efff" },
+    { label: "Max", value: Math.max(...powers).toFixed(1) + " W", color: "#ff9f43" },
+    { label: "Avg", value: avgPower.toFixed(1) + " W", color: "#00ff87" },
+    { label: "Energy", value: sessionEnergyWh.toFixed(2) + " Wh", color: "#a78bfa" }
+  ];
+
+  stats.forEach((stat, i) => {
+    const y = statsY + 38 + i * 16;
+    ectx.fillStyle = labelColor;
+    ectx.fillText(stat.label + ":", statsX + 12, y);
+    ectx.fillStyle = stat.color;
+    ectx.textAlign = "right";
+    ectx.fillText(stat.value, statsX + statsW - 12, y);
+    ectx.textAlign = "left";
+  });
+
+  // Watermark
+  ectx.fillStyle = "rgba(255, 255, 255, 0.2)";
+  ectx.font = "11px 'Segoe UI', system-ui, sans-serif";
+  ectx.textAlign = "right";
+  ectx.fillText("Generated by Kachow ⚡", width - 15, height - 10);
+
+  // Download as PNG
+  const link = document.createElement("a");
+  link.download = `kachow_${new Date().toISOString().slice(0, 19).replace(/[:-]/g, "")}.png`;
+  link.href = exportCanvas.toDataURL("image/png");
+  link.click();
+}
+
 async function init() {
   if (!("getBattery" in navigator)) {
     statusText.textContent = "Not Supported";
     powerEl.textContent = "N/A";
     levelEl.textContent = "--";
+    profileTextEl.textContent = "N/A";
     return;
   }
+
+  // Set up export button
+  exportBtn.addEventListener("click", exportChartImage);
 
   try {
     const battery = await navigator.getBattery();
@@ -281,6 +613,12 @@ async function init() {
         chartValueEl.textContent = powerStr;
         addSample(powerW);
         drawChart();
+        
+        // Update extended stats
+        updateExtendedStats();
+        
+        // Update power profile
+        detectPowerProfile(powerW, charging);
       } else {
         powerEl.textContent = "N/A";
         chartValueEl.textContent = "-- W";
@@ -306,6 +644,7 @@ async function init() {
     console.error(err);
     statusText.textContent = "Error";
     powerEl.textContent = "N/A";
+    profileTextEl.textContent = "Error";
   }
 }
 

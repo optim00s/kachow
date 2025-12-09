@@ -57,10 +57,10 @@ body {
   position: relative;
   padding: 16px 18px 14px;
   width: 360px;
-  min-height: 420px;
+  min-height: 520px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
 /* Header */
@@ -257,6 +257,120 @@ h1 {
   letter-spacing: 0.05em;
 }
 
+/* Extended Stats Row */
+.extended-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.extended-stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+}
+
+.extended-label {
+  font-size: 9px;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.extended-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #e8e8ed;
+}
+
+/* Power Profile Badge */
+.power-profile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  align-self: center;
+}
+
+.profile-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+}
+
+.profile-text {
+  font-size: 10px;
+  font-weight: 500;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.power-profile.power-saver {
+  border-color: rgba(0, 255, 135, 0.3);
+  background: rgba(0, 255, 135, 0.05);
+}
+
+.power-profile.power-saver .profile-icon {
+  color: #00ff87;
+}
+
+.power-profile.power-saver .profile-text {
+  color: #00ff87;
+}
+
+.power-profile.balanced {
+  border-color: rgba(96, 239, 255, 0.3);
+  background: rgba(96, 239, 255, 0.05);
+}
+
+.power-profile.balanced .profile-icon {
+  color: #60efff;
+}
+
+.power-profile.balanced .profile-text {
+  color: #60efff;
+}
+
+.power-profile.performance {
+  border-color: rgba(255, 159, 67, 0.3);
+  background: rgba(255, 159, 67, 0.05);
+}
+
+.power-profile.performance .profile-icon {
+  color: #ff9f43;
+}
+
+.power-profile.performance .profile-text {
+  color: #ff9f43;
+}
+
+.power-profile.high-performance {
+  border-color: rgba(255, 107, 107, 0.3);
+  background: rgba(255, 107, 107, 0.05);
+}
+
+.power-profile.high-performance .profile-icon {
+  color: #ff6b6b;
+}
+
+.power-profile.high-performance .profile-text {
+  color: #ff6b6b;
+}
+
 /* Chart */
 .chart-container {
   flex: 1;
@@ -273,6 +387,36 @@ h1 {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.chart-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.export-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.export-btn:hover {
+  background: rgba(0, 255, 135, 0.1);
+  border-color: rgba(0, 255, 135, 0.3);
+  color: #00ff87;
+}
+
+.export-btn:active {
+  transform: scale(0.95);
 }
 
 .chart-title {
@@ -324,7 +468,9 @@ footer {
 header { animation: fadeIn 0.5s ease-out 0.1s both; }
 .battery-ring-container { animation: fadeIn 0.5s ease-out 0.2s both; }
 .stats-grid { animation: fadeIn 0.5s ease-out 0.3s both; }
-.chart-container { animation: fadeIn 0.5s ease-out 0.4s both; }
+.extended-stats { animation: fadeIn 0.5s ease-out 0.35s both; }
+.power-profile { animation: fadeIn 0.5s ease-out 0.4s both; }
+.chart-container { animation: fadeIn 0.5s ease-out 0.45s both; }
 footer { animation: fadeIn 0.5s ease-out 0.5s both; }
 
 /* Low battery warning */

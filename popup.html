@@ -78,12 +78,49 @@
       </div>
     </div>
 
+    <!-- Session & Averages Stats -->
+    <div class="extended-stats">
+      <div class="extended-stat">
+        <span class="extended-label">Session</span>
+        <span class="extended-value" id="sessionEnergy">0.00 Wh</span>
+      </div>
+      <div class="extended-stat">
+        <span class="extended-label">5m Avg</span>
+        <span class="extended-value" id="avg5m">-- W</span>
+      </div>
+      <div class="extended-stat">
+        <span class="extended-label">30m Avg</span>
+        <span class="extended-value" id="avg30m">-- W</span>
+      </div>
+      <div class="extended-stat">
+        <span class="extended-label">1h Avg</span>
+        <span class="extended-value" id="avg1h">-- W</span>
+      </div>
+    </div>
+
+    <!-- Power Profile Badge -->
+    <div class="power-profile" id="powerProfile">
+      <div class="profile-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="profile-text" id="profileText">Detecting...</span>
+    </div>
+
     <div class="chart-container">
       <div class="chart-header">
         <span class="chart-title">Power History</span>
-        <span class="chart-value" id="chartValue">-- W</span>
+        <div class="chart-actions">
+          <span class="chart-value" id="chartValue">-- W</span>
+          <button class="export-btn" id="exportBtn" title="Export Chart as PNG">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
-      <canvas id="powerChart" width="320" height="140"></canvas>
+      <canvas id="powerChart" width="320" height="120"></canvas>
     </div>
 
     <footer>
