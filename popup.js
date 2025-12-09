@@ -784,6 +784,17 @@ async function init() {
 
       const charging = battery.charging;
       const powerW = estimatePowerW(battery);
+      
+      // Send battery update to background script for badge & notifications
+      try {
+        chrome.runtime.sendMessage({
+          type: "batteryUpdate",
+          level: level,
+          charging: charging
+        });
+      } catch (err) {
+        // Background script might not be ready yet
+      }
 
       // Update status badge
       statusBadge.classList.remove("charging", "discharging");

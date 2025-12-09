@@ -2,13 +2,36 @@
 // Handles: Badge updates, Low battery notifications
 
 const BATTERY_THRESHOLDS = [20, 10, 5];
-let lastNotifiedThreshold = null;
-let lastBatteryLevel = null;
 
-// Update badge with battery percentage
-function updateBadge(level, charging) {
+// Initialize badge on install
+chrome.runtime.onInstalled.addListener(() => {
+  console.log("Kachow installed! ⚡");
+  chrome.action.setBadgeText({ text: "" });
+  chrome.action.setBadgeBackgroundColor({ color: "#00ff87" });
+});
+
+// Listen for messages from popup
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "batteryUpdate") {
+    handleBatteryUpdate(message.level, message.charging);
+    sendResponse({ success: true });
+  }
+  return true;
+});
+
+// Handle battery update from popup
+async function handleBatteryUpdate(level, charging) {
   const percent = Math.round(level * 100);
   
+  // Update badge
+  updateBadge(percent, charging);
+  
+  // Check for low battery notification
+  await checkLowBattery(percent, charging);
+}
+
+// Update badge with battery percentage
+function updateBadge(percent, charging) {
   // Set badge text
   chrome.action.setBadgeText({ text: percent.toString() });
   
@@ -28,23 +51,26 @@ function updateBadge(level, charging) {
 }
 
 // Check and send low battery notification
-function checkLowBattery(level, charging) {
+async function checkLowBattery(percent, charging) {
   // Don't notify if charging
   if (charging) {
-    lastNotifiedThreshold = null;
+    await chrome.storage.local.set({ lastNotifiedThreshold: null });
     return;
   }
   
-  const percent = Math.round(level * 100);
+  // Get stored state
+  const stored = await chrome.storage.local.get(["lastNotifiedThreshold", "lastBatteryPercent"]);
+  const lastNotifiedThreshold = stored.lastNotifiedThreshold;
+  const lastBatteryPercent = stored.lastBatteryPercent;
   
   // Find the current threshold we're at or below
   for (const threshold of BATTERY_THRESHOLDS) {
     if (percent <= threshold) {
       // Only notify if we haven't notified for this threshold yet
       // and we're actually dropping to this level (not starting at it)
-      if (lastNotifiedThreshold !== threshold && lastBatteryLevel !== null && lastBatteryLevel > level) {
-        sendLowBatteryNotification(percent, threshold);
-        lastNotifiedThreshold = threshold;
+      if (lastNotifiedThreshold !== threshold && lastBatteryPercent !== null && lastBatteryPercent > percent) {
+        await sendLowBatteryNotification(percent, threshold);
+        await chrome.storage.local.set({ lastNotifiedThreshold: threshold });
       }
       break;
     }
@@ -52,15 +78,16 @@ function checkLowBattery(level, charging) {
   
   // Reset notification state if battery goes above all thresholds
   if (percent > BATTERY_THRESHOLDS[0]) {
-    lastNotifiedThreshold = null;
+    await chrome.storage.local.set({ lastNotifiedThreshold: null });
   }
   
-  lastBatteryLevel = level;
+  // Store current level
+  await chrome.storage.local.set({ lastBatteryPercent: percent });
 }
 
 // Send notification
-function sendLowBatteryNotification(percent, threshold) {
-  let title, message, icon;
+async function sendLowBatteryNotification(percent, threshold) {
+  let title, message;
   
   if (threshold === 5) {
     title = "⚠️ Critical Battery!";
@@ -73,72 +100,18 @@ function sendLowBatteryNotification(percent, threshold) {
     message = `${percent}% remaining. Consider plugging in.`;
   }
   
-  chrome.notifications.create({
-    type: "basic",
-    iconUrl: "data:image/svg+xml," + encodeURIComponent(`
-      <svg width="128" height="128" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="24" height="24" fill="#0a0a0f"/>
-        <path d="M7 2v11h3v9l7-12h-4l4-8H7z" fill="#00ff87"/>
-      </svg>
-    `),
-    title: title,
-    message: message,
-    priority: 2
-  });
-}
-
-// Monitor battery status
-async function monitorBattery() {
-  if (!("getBattery" in navigator)) {
-    console.log("Battery API not supported in service worker context");
-    return;
-  }
+  // Create notification with a simple data URL icon
+  const iconDataUrl = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAACXBIWXMAAAsTAAALEwEAmpwYAAABZUlEQVR4nO2WMU7DQBBF30pIFBQcgSNQ0HIEjkBJwxE4AiUNR+AIlDQcgZKGI1BS0NJQQBEKQFAglCIvsmXJ2N61d+0UPGkkW/v/nxnvjMNgMPxHANvAGXAHfAIvwG5N25tVnz4DroETYB7znruuzAA+gGNgVLAdA8dFG5oC0G0tgJu8DQHt+GsgmCYE4CpheQ+sCWNXJASgmwVgZu5CAOZ2BZBr3wObOXuJHIBw/xGwkwUQ7t8HPnI2kg4A8BYBPE35LhKWCoBknwqWVbEqgGQ/JiytYlkAYe4F4FEVq1JAeKJ+VbEshOTQrIr1Elq0gWUbWFawKQBWEiTslAAktahgYQAqLQqYU8B3AvAGsBZqKQ7IM/Alr0NdASSXaJa9AGgQwLNCLBOW0wRgOQaOaH4gg3tVrJcCiE/Rx9pV7RBA8rj29lcA8mYDT9pVbQ1A7mwgqmJZALmzgWgaAPnfMRgM/xS/+RQgXqTnFbcAAAAASUVORK5CYII=";
   
   try {
-    const battery = await navigator.getBattery();
-    
-    function update() {
-      updateBadge(battery.level, battery.charging);
-      checkLowBattery(battery.level, battery.charging);
-      
-      // Store battery state for popup
-      chrome.storage.local.set({
-        batteryLevel: battery.level,
-        batteryCharging: battery.charging,
-        lastUpdate: Date.now()
-      });
-    }
-    
-    // Initial update
-    update();
-    
-    // Listen for changes
-    battery.addEventListener("levelchange", update);
-    battery.addEventListener("chargingchange", update);
-    
+    await chrome.notifications.create(`kachow-battery-${Date.now()}`, {
+      type: "basic",
+      iconUrl: iconDataUrl,
+      title: title,
+      message: message,
+      priority: 2
+    });
   } catch (err) {
-    console.error("Battery monitoring error:", err);
+    console.log("Could not send notification:", err);
   }
 }
-
-// Initialize on install/startup
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("Kachow installed! ⚡");
-  monitorBattery();
-});
-
-chrome.runtime.onStartup.addListener(() => {
-  monitorBattery();
-});
-
-// Also try to start monitoring immediately
-monitorBattery();
-
-// Keep service worker alive with periodic alarm
-chrome.alarms.create("keepAlive", { periodInMinutes: 1 });
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === "keepAlive") {
-    monitorBattery();
-  }
-});
-
