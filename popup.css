@@ -25,49 +25,170 @@
 /* Light theme */
 @media (prefers-color-scheme: light) {
   :root {
-    --bg-primary: #f8fafc;
-    --bg-secondary: rgba(0, 0, 0, 0.03);
-    --bg-tertiary: rgba(0, 0, 0, 0.02);
-    --bg-hover: rgba(0, 0, 0, 0.05);
-    --border-color: rgba(0, 0, 0, 0.08);
-    --border-color-hover: rgba(0, 0, 0, 0.15);
-    --text-primary: #1a1a2e;
-    --text-secondary: #4b5563;
-    --text-muted: #6b7280;
-    --text-dimmed: #9ca3af;
-    --grid-color: rgba(0, 0, 0, 0.03);
-    --ring-bg: rgba(0, 0, 0, 0.08);
-    --glow-green: #00cc6a;
-    --glow-blue: #0052cc;
-    --accent-green: #00aa5a;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f1f5f9;
+    --bg-tertiary: #f8fafc;
+    --bg-hover: #e2e8f0;
+    --border-color: #e2e8f0;
+    --border-color-hover: #cbd5e1;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --text-dimmed: #94a3b8;
+    --grid-color: rgba(0, 0, 0, 0.04);
+    --ring-bg: #e2e8f0;
+    --glow-green: #10b981;
+    --glow-blue: #3b82f6;
+    --accent-green: #059669;
     --accent-cyan: #0891b2;
     --accent-orange: #ea580c;
     --accent-red: #dc2626;
-    --chart-placeholder: #9ca3af;
+    --chart-placeholder: #94a3b8;
   }
   
   .glow {
-    opacity: 0.15;
+    opacity: 0.08;
+  }
+  
+  .glow-1 {
+    background: #10b981;
+  }
+  
+  .glow-2 {
+    background: #3b82f6;
+  }
+  
+  .bg-grid {
+    background-image: 
+      linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
   }
   
   .logo svg {
-    filter: drop-shadow(0 0 6px rgba(0, 170, 90, 0.4));
+    filter: drop-shadow(0 0 6px rgba(5, 150, 105, 0.3));
+  }
+  
+  .logo svg path {
+    fill: url(#bolt-gradient-light);
   }
   
   .ring-progress {
-    filter: drop-shadow(0 0 4px rgba(0, 170, 90, 0.3));
+    filter: drop-shadow(0 0 4px rgba(5, 150, 105, 0.25));
   }
   
   .pulse {
+    background: var(--accent-green);
     box-shadow: 0 0 6px var(--accent-green);
   }
   
   .badge.charging .pulse {
+    background: var(--accent-cyan);
     box-shadow: 0 0 6px var(--accent-cyan);
   }
   
   .badge.discharging .pulse {
+    background: var(--accent-orange);
     box-shadow: 0 0 6px var(--accent-orange);
+  }
+  
+  .stat-card {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  
+  .stat-card:hover {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+  
+  .extended-stat {
+    background: #ffffff;
+    border-color: #e2e8f0;
+  }
+  
+  .power-profile {
+    background: #ffffff;
+    border-color: #e2e8f0;
+  }
+  
+  .chart-container {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
+  
+  .badge {
+    background: #ffffff;
+    border-color: #e2e8f0;
+  }
+  
+  .export-btn {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+  }
+  
+  .export-btn:hover {
+    background: #dcfce7;
+    border-color: #86efac;
+    color: #059669;
+  }
+  
+  .compact-toggle {
+    background: #f1f5f9;
+    border-color: #e2e8f0;
+  }
+  
+  .compact-toggle:hover {
+    background: #e2e8f0;
+    border-color: #cbd5e1;
+  }
+  
+  h1 {
+    background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  
+  .battery-percent {
+    background: linear-gradient(135deg, #0f172a 0%, #475569 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  
+  .chart-value {
+    color: #059669;
+  }
+  
+  .power-icon {
+    background: linear-gradient(135deg, #dcfce7 0%, #cffafe 100%);
+    color: #059669;
+  }
+  
+  .time-icon {
+    background: linear-gradient(135deg, #cffafe 0%, #dbeafe 100%);
+    color: #0891b2;
+  }
+  
+  .power-profile.power-saver {
+    background: #dcfce7;
+    border-color: #86efac;
+  }
+  
+  .power-profile.balanced {
+    background: #cffafe;
+    border-color: #67e8f9;
+  }
+  
+  .power-profile.performance {
+    background: #ffedd5;
+    border-color: #fdba74;
+  }
+  
+  .power-profile.high-performance {
+    background: #fee2e2;
+    border-color: #fca5a5;
   }
 }
 
@@ -554,4 +675,144 @@ footer { animation: fadeIn 0.5s ease-out 0.5s both; }
   background: linear-gradient(135deg, var(--accent-red) 0%, var(--accent-orange) 100%);
   -webkit-background-clip: text;
   background-clip: text;
+}
+
+/* Header actions */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.compact-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.compact-toggle:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-color-hover);
+  color: var(--text-secondary);
+}
+
+.compact-toggle .icon-compact {
+  display: none;
+}
+
+/* ============================================
+   COMPACT MODE
+   ============================================ */
+
+#root.compact {
+  width: 280px;
+  min-height: auto;
+  padding: 12px 14px;
+  gap: 10px;
+}
+
+#root.compact .compact-toggle .icon-expand {
+  display: none;
+}
+
+#root.compact .compact-toggle .icon-compact {
+  display: block;
+}
+
+/* Compact: Smaller battery ring */
+#root.compact .battery-ring-container {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto;
+}
+
+#root.compact .battery-percent {
+  font-size: 22px;
+}
+
+#root.compact .battery-label {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+/* Compact: Stats in a row */
+#root.compact .stats-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#root.compact .stat-card {
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+#root.compact .stat-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+}
+
+#root.compact .stat-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+#root.compact .stat-value {
+  font-size: 12px;
+}
+
+#root.compact .stat-label {
+  font-size: 9px;
+}
+
+/* Compact: Hide extended elements */
+#root.compact .extended-stats,
+#root.compact .power-profile,
+#root.compact .chart-container,
+#root.compact footer {
+  display: none;
+}
+
+/* Compact: Smaller header */
+#root.compact header {
+  margin-bottom: 2px;
+}
+
+#root.compact .logo svg {
+  width: 20px;
+  height: 20px;
+}
+
+#root.compact h1 {
+  font-size: 14px;
+}
+
+#root.compact .badge {
+  padding: 4px 8px;
+  font-size: 10px;
+}
+
+#root.compact .pulse {
+  width: 5px;
+  height: 5px;
+}
+
+/* Compact mode transitions */
+#root {
+  transition: width 0.3s ease, min-height 0.3s ease, padding 0.3s ease, gap 0.3s ease;
+}
+
+.battery-ring-container,
+.stat-card,
+.stat-icon,
+.badge {
+  transition: all 0.3s ease;
 }

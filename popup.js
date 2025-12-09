@@ -5,9 +5,10 @@ const CAPACITY_WH = 37;
 // How many samples to keep in memory (e.g. 60 minutes if interval=5s)
 const MAX_SAMPLES = 720;
 
-// Storage key for persistent history
+// Storage keys
 const STORAGE_KEY = "kachow_history";
 const STORAGE_SESSION_KEY = "kachow_session";
+const STORAGE_COMPACT_KEY = "kachow_compact";
 
 // DOM Elements
 const levelEl = document.getElementById("level");
@@ -29,6 +30,8 @@ const avg1hEl = document.getElementById("avg1h");
 const powerProfileEl = document.getElementById("powerProfile");
 const profileTextEl = document.getElementById("profileText");
 const exportBtn = document.getElementById("exportBtn");
+const compactToggle = document.getElementById("compactToggle");
+const rootEl = document.getElementById("root");
 
 // Each sample = { t: timestamp_ms, p: power_W }
 let samples = [];
@@ -66,15 +69,15 @@ function getChartColors() {
     };
   } else {
     return {
-      placeholder: "#9ca3af",
-      gradientStart: "rgba(0, 170, 90, 0.25)",
+      placeholder: "#94a3b8",
+      gradientStart: "rgba(5, 150, 105, 0.2)",
       gradientMid: "rgba(8, 145, 178, 0.1)",
-      gradientEnd: "rgba(0, 82, 204, 0)",
-      lineStart: "#00aa5a",
+      gradientEnd: "rgba(59, 130, 246, 0)",
+      lineStart: "#059669",
       lineMid: "#0891b2",
-      lineEnd: "#0052cc",
-      dotColor: "#00aa5a",
-      dotGlow: "rgba(0, 170, 90, 0.3)"
+      lineEnd: "#3b82f6",
+      dotColor: "#059669",
+      dotGlow: "rgba(5, 150, 105, 0.25)"
     };
   }
 }
@@ -122,6 +125,35 @@ function saveHistory() {
       console.log("Could not save history:", err);
     }
   }, 1000); // Debounce by 1 second
+}
+
+// Compact mode functions
+async function loadCompactMode() {
+  try {
+    const result = await chrome.storage.local.get([STORAGE_COMPACT_KEY]);
+    if (result[STORAGE_COMPACT_KEY]) {
+      rootEl.classList.add("compact");
+    }
+  } catch (err) {
+    console.log("Could not load compact preference:", err);
+  }
+}
+
+async function toggleCompactMode() {
+  const isCompact = rootEl.classList.toggle("compact");
+  
+  try {
+    await chrome.storage.local.set({
+      [STORAGE_COMPACT_KEY]: isCompact
+    });
+  } catch (err) {
+    console.log("Could not save compact preference:", err);
+  }
+  
+  // Redraw chart if switching to full mode
+  if (!isCompact && samples.length >= 2) {
+    setTimeout(drawChart, 50);
+  }
 }
 
 function formatSeconds(sec) {
@@ -408,6 +440,63 @@ function estimateTimeSeconds(battery, powerW) {
   }
 }
 
+// Get export theme colors based on system preference
+function getExportThemeColors() {
+  if (isDarkMode()) {
+    return {
+      bgColor: "#0a0a0f",
+      gridColor: "rgba(255, 255, 255, 0.05)",
+      gridLineColor: "rgba(255, 255, 255, 0.03)",
+      textColor: "#e8e8ed",
+      labelColor: "#6b7280",
+      accentColor: "#00ff87",
+      secondaryColor: "#60efff",
+      gradientStart: "rgba(0, 255, 135, 0.4)",
+      gradientMid: "rgba(96, 239, 255, 0.15)",
+      gradientEnd: "rgba(0, 97, 255, 0)",
+      lineStart: "#00ff87",
+      lineMid: "#60efff",
+      lineEnd: "#0061ff",
+      dotGlow: "rgba(0, 255, 135, 0.3)",
+      statsBoxBg: "rgba(0, 0, 0, 0.6)",
+      statsBoxBorder: "rgba(255, 255, 255, 0.1)",
+      watermarkColor: "rgba(255, 255, 255, 0.2)",
+      statColors: {
+        min: "#60efff",
+        max: "#ff9f43",
+        avg: "#00ff87",
+        energy: "#a78bfa"
+      }
+    };
+  } else {
+    return {
+      bgColor: "#ffffff",
+      gridColor: "rgba(0, 0, 0, 0.06)",
+      gridLineColor: "rgba(0, 0, 0, 0.04)",
+      textColor: "#0f172a",
+      labelColor: "#64748b",
+      accentColor: "#059669",
+      secondaryColor: "#0891b2",
+      gradientStart: "rgba(5, 150, 105, 0.25)",
+      gradientMid: "rgba(8, 145, 178, 0.12)",
+      gradientEnd: "rgba(59, 130, 246, 0)",
+      lineStart: "#059669",
+      lineMid: "#0891b2",
+      lineEnd: "#3b82f6",
+      dotGlow: "rgba(5, 150, 105, 0.25)",
+      statsBoxBg: "rgba(241, 245, 249, 0.95)",
+      statsBoxBorder: "#e2e8f0",
+      watermarkColor: "rgba(0, 0, 0, 0.25)",
+      statColors: {
+        min: "#0891b2",
+        max: "#ea580c",
+        avg: "#059669",
+        energy: "#7c3aed"
+      }
+    };
+  }
+}
+
 // Export chart as PNG image
 function exportChartImage() {
   if (samples.length < 2) {
@@ -426,13 +515,14 @@ function exportChartImage() {
   const ectx = exportCanvas.getContext("2d");
   ectx.scale(dpr, dpr);
 
-  // Colors
-  const bgColor = "#0a0a0f";
-  const gridColor = "rgba(255, 255, 255, 0.05)";
-  const textColor = "#e8e8ed";
-  const labelColor = "#6b7280";
-  const accentColor = "#00ff87";
-  const secondaryColor = "#60efff";
+  // Get theme-aware colors
+  const theme = getExportThemeColors();
+  const bgColor = theme.bgColor;
+  const gridColor = theme.gridColor;
+  const textColor = theme.textColor;
+  const labelColor = theme.labelColor;
+  const accentColor = theme.accentColor;
+  const secondaryColor = theme.secondaryColor;
 
   // Fill background
   ectx.fillStyle = bgColor;
@@ -494,7 +584,7 @@ function exportChartImage() {
     ectx.fillText(value.toFixed(1) + " W", padding.left - 10, y + 4);
     
     // Grid line
-    ectx.strokeStyle = "rgba(255, 255, 255, 0.03)";
+    ectx.strokeStyle = theme.gridLineColor;
     ectx.beginPath();
     ectx.moveTo(padding.left, y);
     ectx.lineTo(padding.left + chartWidth, y);
@@ -541,9 +631,9 @@ function exportChartImage() {
 
   // Create gradient for area fill
   const gradient = ectx.createLinearGradient(0, padding.top, 0, padding.top + chartHeight);
-  gradient.addColorStop(0, "rgba(0, 255, 135, 0.4)");
-  gradient.addColorStop(0.5, "rgba(96, 239, 255, 0.15)");
-  gradient.addColorStop(1, "rgba(0, 97, 255, 0)");
+  gradient.addColorStop(0, theme.gradientStart);
+  gradient.addColorStop(0.5, theme.gradientMid);
+  gradient.addColorStop(1, theme.gradientEnd);
 
   // Draw filled area
   ectx.beginPath();
@@ -561,9 +651,9 @@ function exportChartImage() {
 
   // Draw line
   const lineGradient = ectx.createLinearGradient(padding.left, 0, padding.left + chartWidth, 0);
-  lineGradient.addColorStop(0, "#00ff87");
-  lineGradient.addColorStop(0.5, "#60efff");
-  lineGradient.addColorStop(1, "#0061ff");
+  lineGradient.addColorStop(0, theme.lineStart);
+  lineGradient.addColorStop(0.5, theme.lineMid);
+  lineGradient.addColorStop(1, theme.lineEnd);
 
   ectx.beginPath();
   samples.forEach((s, idx) => {
@@ -590,7 +680,7 @@ function exportChartImage() {
   
   ectx.beginPath();
   ectx.arc(lastX, lastY, 10, 0, Math.PI * 2);
-  ectx.fillStyle = "rgba(0, 255, 135, 0.3)";
+  ectx.fillStyle = theme.dotGlow;
   ectx.fill();
 
   // Stats box
@@ -600,8 +690,8 @@ function exportChartImage() {
   const statsH = 100;
 
   // Stats background
-  ectx.fillStyle = "rgba(0, 0, 0, 0.6)";
-  ectx.strokeStyle = "rgba(255, 255, 255, 0.1)";
+  ectx.fillStyle = theme.statsBoxBg;
+  ectx.strokeStyle = theme.statsBoxBorder;
   ectx.lineWidth = 1;
   ectx.beginPath();
   ectx.roundRect(statsX, statsY, statsW, statsH, 8);
@@ -616,10 +706,10 @@ function exportChartImage() {
 
   ectx.font = "12px 'Segoe UI', system-ui, sans-serif";
   const stats = [
-    { label: "Min", value: Math.min(...powers).toFixed(1) + " W", color: "#60efff" },
-    { label: "Max", value: Math.max(...powers).toFixed(1) + " W", color: "#ff9f43" },
-    { label: "Avg", value: avgPower.toFixed(1) + " W", color: "#00ff87" },
-    { label: "Energy", value: sessionEnergyWh.toFixed(2) + " Wh", color: "#a78bfa" }
+    { label: "Min", value: Math.min(...powers).toFixed(1) + " W", color: theme.statColors.min },
+    { label: "Max", value: Math.max(...powers).toFixed(1) + " W", color: theme.statColors.max },
+    { label: "Avg", value: avgPower.toFixed(1) + " W", color: theme.statColors.avg },
+    { label: "Energy", value: sessionEnergyWh.toFixed(2) + " Wh", color: theme.statColors.energy }
   ];
 
   stats.forEach((stat, i) => {
@@ -633,7 +723,7 @@ function exportChartImage() {
   });
 
   // Watermark
-  ectx.fillStyle = "rgba(255, 255, 255, 0.2)";
+  ectx.fillStyle = theme.watermarkColor;
   ectx.font = "11px 'Segoe UI', system-ui, sans-serif";
   ectx.textAlign = "right";
   ectx.fillText("Generated by Kachow ⚡", width - 15, height - 10);
@@ -646,19 +736,27 @@ function exportChartImage() {
 }
 
 async function init() {
-  // Load persistent history first
+  // Load compact mode preference first (instant UI)
+  await loadCompactMode();
+  
+  // Load persistent history
   await loadHistory();
   
-  // Draw chart with loaded data
-  if (samples.length > 0) {
+  // Draw chart with loaded data (if not compact)
+  if (samples.length > 0 && !rootEl.classList.contains("compact")) {
     drawChart();
     updateExtendedStats();
   }
   
+  // Set up compact mode toggle
+  compactToggle.addEventListener("click", toggleCompactMode);
+  
   // Listen for system theme changes
   if (window.matchMedia) {
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      drawChart();
+      if (!rootEl.classList.contains("compact")) {
+        drawChart();
+      }
     });
   }
   
@@ -717,13 +815,14 @@ async function init() {
         powerEl.textContent = powerStr;
         chartValueEl.textContent = powerStr;
         addSample(powerW);
-        drawChart();
         
-        // Update extended stats
-        updateExtendedStats();
-        
-        // Update power profile
-        detectPowerProfile(powerW, charging);
+        // Only draw chart and extended stats if not in compact mode
+        const isCompact = rootEl.classList.contains("compact");
+        if (!isCompact) {
+          drawChart();
+          updateExtendedStats();
+          detectPowerProfile(powerW, charging);
+        }
       } else {
         powerEl.textContent = "N/A";
         chartValueEl.textContent = "-- W";
@@ -742,8 +841,12 @@ async function init() {
     // Poll every 5 seconds
     setInterval(update, 5000);
     
-    // Redraw chart on resize
-    window.addEventListener("resize", drawChart);
+    // Redraw chart on resize (only if not compact)
+    window.addEventListener("resize", () => {
+      if (!rootEl.classList.contains("compact")) {
+        drawChart();
+      }
+    });
     
   } catch (err) {
     console.error(err);

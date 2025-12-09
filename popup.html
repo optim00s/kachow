@@ -27,10 +27,20 @@
         </svg>
         <h1>Kachow</h1>
       </div>
-      <span class="badge" id="statusBadge">
-        <span class="pulse"></span>
-        <span id="statusText">Detecting…</span>
-      </span>
+      <div class="header-actions">
+        <button class="compact-toggle" id="compactToggle" title="Toggle compact mode">
+          <svg class="icon-expand" width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <svg class="icon-compact" width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <span class="badge" id="statusBadge">
+          <span class="pulse"></span>
+          <span id="statusText">Detecting…</span>
+        </span>
+      </div>
     </header>
 
     <div class="battery-ring-container">

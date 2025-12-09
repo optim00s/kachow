@@ -21,6 +21,7 @@ A sleek Chrome extension that estimates real-time charging and discharging power
 - **Low Battery Notifications** — Chrome notifications at 20%, 10%, and 5% battery
 - **Light/Dark Theme** — Automatically follows your system theme preference
 - **Persistent History** — Power data survives popup close (up to 1 hour)
+- **Compact Mode** — Minimalist view showing only essential stats
 - **Low Battery Warning** — Visual indicator when battery drops below 20%
 - **Beautiful UI** — Modern glassmorphism design with smooth animations
 
