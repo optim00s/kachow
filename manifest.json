@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Kachow",
+  "version": "1.0",
+  "description": "Estimate your laptop's charging/discharging power using the Battery API.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Kachow"
+  },
+  "permissions": []
+}

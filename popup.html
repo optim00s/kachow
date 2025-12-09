@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kachow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="bg-grid"></div>
+  <div class="glow glow-1"></div>
+  <div class="glow glow-2"></div>
+  
+  <div id="root">
+    <header>
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 2v11h3v9l7-12h-4l4-8H7z" fill="url(#bolt-gradient)"/>
+          <defs>
+            <linearGradient id="bolt-gradient" x1="7" y1="2" x2="17" y2="22" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00ff87"/>
+              <stop offset="1" stop-color="#60efff"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <h1>Kachow</h1>
+      </div>
+      <span class="badge" id="statusBadge">
+        <span class="pulse"></span>
+        <span id="statusText">Detecting…</span>
+      </span>
+    </header>
+
+    <div class="battery-ring-container">
+      <svg class="battery-ring" viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="ring-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00ff87"/>
+            <stop offset="50%" stop-color="#60efff"/>
+            <stop offset="100%" stop-color="#0061ff"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-bg" cx="60" cy="60" r="52" />
+        <circle class="ring-progress" id="ringProgress" cx="60" cy="60" r="52" />
+      </svg>
+      <div class="battery-center">
+        <span class="battery-percent" id="level">--</span>
+        <span class="battery-label">%</span>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon power-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value" id="power">--</span>
+          <span class="stat-label">Power Draw</span>
+        </div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-icon time-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+            <path d="M12 6v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-value" id="timeInfo">--</span>
+          <span class="stat-label" id="timeLabel">Remaining</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-header">
+        <span class="chart-title">Power History</span>
+        <span class="chart-value" id="chartValue">-- W</span>
+      </div>
+      <canvas id="powerChart" width="320" height="140"></canvas>
+    </div>
+
+    <footer>
+      <span class="capacity-info">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+          <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Estimates may vary · 37 Wh Battery
+      </span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
