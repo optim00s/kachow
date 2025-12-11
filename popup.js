@@ -317,11 +317,18 @@ function updateRing(level) {
 function drawChart() {
   const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
-  
+
   // Set canvas size accounting for device pixel ratio
-  canvas.width = rect.width * dpr;
-  canvas.height = rect.height * dpr;
-  ctx.scale(dpr, dpr);
+  const displayWidth = Math.round(rect.width * dpr);
+  const displayHeight = Math.round(rect.height * dpr);
+
+  if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+    canvas.width = displayWidth;
+    canvas.height = displayHeight;
+  }
+
+  // Reset any previous transforms before scaling to avoid compounding
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   
   const width = rect.width;
   const height = rect.height;
